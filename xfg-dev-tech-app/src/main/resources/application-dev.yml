@@ -27,12 +27,19 @@ spring:
       # 连接测试query
       connection-test-query: SELECT 1
   ai:
+    openai:
+      base-url: https://api.openai.com
+      api-key: sk-lBZOKiP47JPh1DNAH-hhw5AFfXjKyDXIbItK7imV9-T3BlbkFJaiqqqlYWhPQ1rRq9DM9IcENCPXeuonDphuvIgGqCsA
+      embedding-model: text-embedding-ada-002
     ollama:
       base-url: http://localhost:11434
       embedding:
         options:
           num-batch: 512
         model: nomic-embed-text
+    rag:
+      embed: text-embedding-ada-002 #nomic-embed-text、text-embedding-ada-002, nomic-embed-text
+
 
 # Redis
 redis:
@@ -53,3 +60,4 @@ logging:
   level:
     root: info
   config: classpath:logback-spring.xml
+
