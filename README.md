@@ -114,12 +114,21 @@ curl "http://localhost:8090/api/v1/rag/retrieve?ragTag=techqa&message=AppScan%20
 Prepared demo material:
 
 - `docs/final/DEMO_QUERIES.md`
+- `docs/final/PUBLIC_ENDPOINT_PLAN.md`
 - `scripts/presentation_smoke_test.sh`
+- `scripts/start_public_endpoint.sh`
+- `scripts/stop_public_endpoint.sh`
 
 Run the smoke test:
 
 ```bash
 bash scripts/presentation_smoke_test.sh http://localhost
+```
+
+Start a temporary public URL for the local demo:
+
+```bash
+bash scripts/start_public_endpoint.sh
 ```
 
 ## Current Final-Project Scope

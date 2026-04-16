@@ -42,8 +42,14 @@ Read these files in order:
 
 - `DEMO_QUERIES.md`
   - prepared live-demo questions and expected evidence
+- `PUBLIC_ENDPOINT_PLAN.md`
+  - how to expose the local demo through a public URL on presentation day
 - `../../scripts/presentation_smoke_test.sh`
   - quick verification script before presentation
+- `../../scripts/start_public_endpoint.sh`
+  - starts the public tunnel for the local frontend
+- `../../scripts/stop_public_endpoint.sh`
+  - stops the public tunnel
 
 ## Reference materials
 

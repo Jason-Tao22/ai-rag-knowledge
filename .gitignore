@@ -42,3 +42,4 @@ data/log/
 data/raw/TechQA.tar.gz
 data/processed/techqa_batches/
 xfg-dev-tech-app/data/
+.runtime/
