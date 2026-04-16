@@ -20,6 +20,7 @@ Read these files in order:
    - how to pull models
    - how to test retrieval and grounded QA
    - how to pull raw dataset files with Git LFS
+   - how to run the presentation smoke test
 
 ## Writeup files
 
@@ -36,6 +37,13 @@ Read these files in order:
   - short speaking outline
 - `Final_Presentation_Template.pptx`
   - copy of the presentation deck template we are filling
+
+## Demo prep files
+
+- `DEMO_QUERIES.md`
+  - prepared live-demo questions and expected evidence
+- `../../scripts/presentation_smoke_test.sh`
+  - quick verification script before presentation
 
 ## Reference materials
 
@@ -61,4 +69,4 @@ The extracted raw JSON files are in the repo. The duplicate archive file `data/r
 1. use `SLIDE_CONTENT_DRAFT.md` to fill the slide deck
 2. use `FINAL_WRITEUP_DRAFT.md` to write the final report
 3. use `PROJECT_STATUS.md` and the README to verify the demo locally
-4. prepare presentation-day demo questions and screenshots
+4. use `DEMO_QUERIES.md` and the smoke test before presentation

@@ -109,6 +109,19 @@ curl "http://localhost:8090/api/v1/rag/retrieve?ragTag=techqa&message=AppScan%20
 - The TechQA raw dataset is not stored in this repository; see the final writeup for attribution and download instructions.
 - The main demo retrieval path uses PostgreSQL full-text search plus passage citations, which keeps the 10k-document demo responsive and easy to reproduce.
 
+## Presentation-Day Helpers
+
+Prepared demo material:
+
+- `docs/final/DEMO_QUERIES.md`
+- `scripts/presentation_smoke_test.sh`
+
+Run the smoke test:
+
+```bash
+bash scripts/presentation_smoke_test.sh http://localhost
+```
+
 ## Current Final-Project Scope
 
 - TechQA technical-support retrieval over 10,000 indexed source documents
@@ -125,6 +138,7 @@ These files are intended to help teammates continue the project quickly:
 - `docs/final/START_HERE.md`
 - `docs/final/PROJECT_STATUS.md`
 - `docs/final/TEAM_COLLAB_PLAN.md`
+- `docs/final/DEMO_QUERIES.md`
 - `docs/final/SLIDE_CONTENT_DRAFT.md`
 - `docs/final/PRESENTATION_OUTLINE.md`
 - `docs/final/FINAL_WRITEUP_DRAFT.md`
