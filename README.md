@@ -68,6 +68,20 @@ The default final-demo setup uses 10,000 TechQA technotes stored in PostgreSQL t
 
 For presentation-day stability, the compose file keeps only one Ollama model loaded at a time. This avoids the large latency spikes that happen when the embedding model and answer model both remain resident in low-memory CPU environments.
 
+## Raw Data in This Repo
+
+The `data/raw` directory is tracked with Git LFS so teammates can access the original TechQA assets from the repository without committing multi-gigabyte blobs directly into normal Git history.
+
+If you want the raw files after cloning, install Git LFS and run:
+
+```bash
+git lfs pull
+```
+
+Note:
+- the extracted raw TechQA JSON files are stored in the repository via Git LFS
+- the duplicate local archive copy `data/raw/TechQA.tar.gz` is intentionally not pushed because GitHub LFS rejects single objects larger than 2 GB
+
 ## API Endpoints
 
 - `GET /api/v1/rag/query_rag_tag_list`: list indexed knowledge bases

@@ -19,6 +19,7 @@ Read these files in order:
    - how to run the system
    - how to pull models
    - how to test retrieval and grounded QA
+   - how to pull raw dataset files with Git LFS
 
 ## Writeup files
 
@@ -44,6 +45,16 @@ These are copies of the original course and proposal materials:
 - `reference/course_proposal_template.pdf`
 - `reference/team_proposal_draft.md`
 - `reference/team_proposal_draft.tex`
+
+## Raw data note
+
+The repository now tracks `data/raw` with Git LFS. If you clone the repo and want the original TechQA raw files locally, install Git LFS and run:
+
+```bash
+git lfs pull
+```
+
+The extracted raw JSON files are in the repo. The duplicate archive file `data/raw/TechQA.tar.gz` is kept local only because GitHub LFS does not accept single files larger than 2 GB.
 
 ## Recommended next actions
 
