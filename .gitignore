@@ -36,3 +36,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Final project local artifacts ###
+data/raw/
+data/log/
+data/processed/techqa_batches/
+xfg-dev-tech-app/data/

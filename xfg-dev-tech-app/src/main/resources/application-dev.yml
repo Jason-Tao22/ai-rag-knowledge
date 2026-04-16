@@ -1,12 +1,16 @@
 server:
-  port: 8090
+  port: ${SERVER_PORT:8090}
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:200MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:200MB}
   datasource:
-    driver-class-name: org.postgresql.Driver
-    username: postgres
-    password: postgres
-    url: jdbc:postgresql://localhost:15432/ai-rag-knowledge
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ai-rag-knowledge}
     type: com.zaxxer.hikari.HikariDataSource
     # hikari连接池配置
     hikari:
@@ -28,36 +32,35 @@ spring:
       connection-test-query: SELECT 1
   ai:
     openai:
-      base-url: https://api.openai.com
-      api-key: sk-lBZOKiP47JPh1DNAH-hhw5AFfXjKyDXIbItK7imV9-T3BlbkFJaiqqqlYWhPQ1rRq9DM9IcENCPXeuonDphuvIgGqCsA
-      embedding-model: text-embedding-ada-002
+      base-url: ${SPRING_AI_OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${SPRING_AI_OPENAI_API_KEY:change-me}
+      embedding-model: ${SPRING_AI_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
     ollama:
-      base-url: http://localhost:11434
+      base-url: ${SPRING_AI_OLLAMA_BASE_URL:http://localhost:11434}
       embedding:
         options:
-          num-batch: 512
-        model: nomic-embed-text
+          num-batch: ${SPRING_AI_OLLAMA_EMBEDDING_OPTIONS_NUM_BATCH:256}
+        model: ${SPRING_AI_OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
     rag:
-      embed: text-embedding-ada-002 #nomic-embed-text、text-embedding-ada-002, nomic-embed-text
+      embed: ${SPRING_AI_RAG_EMBED:nomic-embed-text}
 
 
 # Redis
 redis:
   sdk:
     config:
-      host: localhost
-      port: 16379
-      pool-size: 10
-      min-idle-size: 5
-      idle-timeout: 30000
-      connect-timeout: 5000
-      retry-attempts: 3
-      retry-interval: 1000
-      ping-interval: 60000
-      keep-alive: true
+      host: ${REDIS_SDK_CONFIG_HOST:localhost}
+      port: ${REDIS_SDK_CONFIG_PORT:6379}
+      pool-size: ${REDIS_SDK_CONFIG_POOL_SIZE:10}
+      min-idle-size: ${REDIS_SDK_CONFIG_MIN_IDLE_SIZE:5}
+      idle-timeout: ${REDIS_SDK_CONFIG_IDLE_TIMEOUT:30000}
+      connect-timeout: ${REDIS_SDK_CONFIG_CONNECT_TIMEOUT:5000}
+      retry-attempts: ${REDIS_SDK_CONFIG_RETRY_ATTEMPTS:3}
+      retry-interval: ${REDIS_SDK_CONFIG_RETRY_INTERVAL:1000}
+      ping-interval: ${REDIS_SDK_CONFIG_PING_INTERVAL:60000}
+      keep-alive: ${REDIS_SDK_CONFIG_KEEP_ALIVE:true}
 
 logging:
   level:
     root: info
   config: classpath:logback-spring.xml
-
