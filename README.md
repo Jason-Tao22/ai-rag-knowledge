@@ -108,6 +108,7 @@ curl "http://localhost:8090/api/v1/rag/retrieve?ragTag=techqa&message=AppScan%20
 
 These files are intended to help teammates continue the project quickly:
 
+- `docs/final/START_HERE.md`
 - `docs/final/PROJECT_STATUS.md`
 - `docs/final/TEAM_COLLAB_PLAN.md`
 - `docs/final/SLIDE_CONTENT_DRAFT.md`

@@ -1,0 +1,53 @@
+# Final Project Start Here
+
+This folder is the handoff hub for the final project.
+
+## If you are a teammate joining the repo
+
+Read these files in order:
+
+1. `PROJECT_STATUS.md`
+   - what the project currently is
+   - what is already working
+   - what still needs to be finished
+
+2. `TEAM_COLLAB_PLAN.md`
+   - suggested division of labor
+   - checklist for the remaining work
+
+3. `README.md` in the repo root
+   - how to run the system
+   - how to pull models
+   - how to test retrieval and grounded QA
+
+## Writeup files
+
+- `FINAL_WRITEUP_DRAFT.md`
+  - draft structure for the final report
+- `SYSTEM_DIAGRAM.md`
+  - current system diagram
+
+## Slide files
+
+- `SLIDE_CONTENT_DRAFT.md`
+  - text draft to paste into the class slide deck
+- `PRESENTATION_OUTLINE.md`
+  - short speaking outline
+- `Final_Presentation_Template.pptx`
+  - copy of the presentation deck template we are filling
+
+## Reference materials
+
+These are copies of the original course and proposal materials:
+
+- `reference/course_final_project_template.pdf`
+- `reference/course_proposal_template.pdf`
+- `reference/team_proposal_draft.md`
+- `reference/team_proposal_draft.tex`
+
+## Recommended next actions
+
+1. use `SLIDE_CONTENT_DRAFT.md` to fill the slide deck
+2. use `FINAL_WRITEUP_DRAFT.md` to write the final report
+3. use `PROJECT_STATUS.md` and the README to verify the demo locally
+4. prepare presentation-day demo questions and screenshots
