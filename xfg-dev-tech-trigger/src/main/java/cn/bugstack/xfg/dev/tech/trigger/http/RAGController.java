@@ -110,7 +110,7 @@ public class RAGController implements IRAGService {
   @RequestMapping(value = "file/upload", method = RequestMethod.POST, headers = "content-type=multipart/form-data")
   @Override
   public Response<String> uploadFile(@RequestParam("ragTag") String ragTag, @RequestParam("file") List<MultipartFile> files) {
-    log.info("上传知识库开始{}", ragTag);
+    log.info("Starting knowledge-base upload: {}", ragTag);
     int totalChunks = 0;
 
     for (MultipartFile file : files) {
@@ -130,14 +130,14 @@ public class RAGController implements IRAGService {
     }
 
     registerRagTag(ragTag);
-    log.info("知识库上传完成: {}, chunks={}", ragTag, totalChunks);
-    return Response.<String>builder().code("0000").info("调用成功").data("Imported " + totalChunks + " chunks").build();
+    log.info("Knowledge-base upload completed: {}, chunks={}", ragTag, totalChunks);
+    return Response.<String>builder().code("0000").info("Success").data("Imported " + totalChunks + " chunks").build();
   }
 
   @RequestMapping(value = "corpus/import_jsonl", method = RequestMethod.POST, headers = "content-type=multipart/form-data")
   public Response<RagImportSummary> importJsonlCorpus(@RequestParam("ragTag") String ragTag,
                                                       @RequestParam("file") MultipartFile file) throws IOException {
-    log.info("开始导入 JSONL 知识库: {}", ragTag);
+    log.info("Starting JSONL corpus import: {}", ragTag);
     ensureCorpusTable();
 
     int importedDocuments = 0;
@@ -159,7 +159,7 @@ public class RAGController implements IRAGService {
 
         String text = firstNonBlank(asString(record.get("text")), asString(record.get("passage")));
         if (StringUtils.isBlank(text)) {
-          log.warn("跳过第 {} 行，因为缺少 text 字段", lineNumber);
+          log.warn("Skipping line {} because the text field is missing", lineNumber);
           continue;
         }
 
@@ -197,11 +197,11 @@ public class RAGController implements IRAGService {
     }
 
     registerRagTag(ragTag);
-    log.info("JSONL 导入完成: {}, docs={}, chunks={}", ragTag, importedDocuments, importedChunks);
+    log.info("JSONL import completed: {}, docs={}, chunks={}", ragTag, importedDocuments, importedChunks);
 
     return Response.<RagImportSummary>builder()
         .code("0000")
-        .info("调用成功")
+        .info("Success")
         .data(RagImportSummary.builder()
             .ragTag(ragTag)
             .sourceFile(file.getOriginalFilename())
@@ -218,7 +218,7 @@ public class RAGController implements IRAGService {
                                                @RequestParam("token") String token) throws Exception {
     String localPath = "./git-cloned-repo";
     String repoProjectName = extractProjectName(repoUrl);
-    log.info("克隆路径：{}", new File(localPath).getAbsolutePath());
+    log.info("Clone path: {}", new File(localPath).getAbsolutePath());
 
     FileUtils.deleteDirectory(new File(localPath));
 
@@ -232,7 +232,7 @@ public class RAGController implements IRAGService {
     Files.walkFileTree(Paths.get(localPath), new SimpleFileVisitor<>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        log.info("{} 遍历解析路径，上传知识库:{}", repoProjectName, file.getFileName());
+        log.info("{} parsing repository file for knowledge-base import: {}", repoProjectName, file.getFileName());
         try {
           TikaDocumentReader reader = new TikaDocumentReader(new PathResource(file));
           List<Document> documents = reader.get();
@@ -256,7 +256,7 @@ public class RAGController implements IRAGService {
               )
           ));
         } catch (Exception e) {
-          log.error("遍历解析路径，上传知识库失败:{}", file.getFileName(), e);
+          log.error("Failed to parse repository file for knowledge-base import: {}", file.getFileName(), e);
         }
         return FileVisitResult.CONTINUE;
       }
@@ -272,8 +272,8 @@ public class RAGController implements IRAGService {
     registerRagTag(repoProjectName);
 
     git.close();
-    log.info("遍历解析路径，上传完成: {}, chunks={}", repoUrl, importedChunks.get());
-    return Response.<String>builder().code("0000").info("调用成功").data("Imported " + importedChunks.get() + " chunks").build();
+    log.info("Repository import completed: {}, chunks={}", repoUrl, importedChunks.get());
+    return Response.<String>builder().code("0000").info("Success").data("Imported " + importedChunks.get() + " chunks").build();
   }
 
   @RequestMapping(value = "query", method = RequestMethod.GET)
@@ -307,7 +307,7 @@ public class RAGController implements IRAGService {
 
       return Response.<RagAnswerData>builder()
           .code("0000")
-          .info("调用成功")
+          .info("Success")
           .data(RagAnswerData.builder()
               .question(message)
               .answer(answer)
@@ -319,10 +319,10 @@ public class RAGController implements IRAGService {
               .build())
           .build();
     } catch (Exception e) {
-      log.error("RAG 查询失败: ragTag={}, message={}", ragTag, message, e);
+      log.error("RAG query failed: ragTag={}, message={}", ragTag, message, e);
       return Response.<RagAnswerData>builder()
           .code("9999")
-          .info("处理请求时发生错误: " + e.getMessage())
+          .info("Request processing error: " + e.getMessage())
           .data(RagAnswerData.builder()
               .question(message)
               .answer("The system could not generate an answer for this request.")
@@ -350,7 +350,7 @@ public class RAGController implements IRAGService {
 
       return Response.<RagAnswerData>builder()
           .code("0000")
-          .info("调用成功")
+          .info("Success")
           .data(RagAnswerData.builder()
               .question(message)
               .answer(answer)
@@ -362,10 +362,10 @@ public class RAGController implements IRAGService {
               .build())
           .build();
     } catch (Exception e) {
-      log.error("RAG 检索失败: ragTag={}, message={}", ragTag, message, e);
+      log.error("RAG retrieval failed: ragTag={}, message={}", ragTag, message, e);
       return Response.<RagAnswerData>builder()
           .code("9999")
-          .info("处理检索请求时发生错误: " + e.getMessage())
+          .info("Retrieval request processing error: " + e.getMessage())
           .data(RagAnswerData.builder()
               .question(message)
               .answer("The system could not retrieve supporting passages for this request.")

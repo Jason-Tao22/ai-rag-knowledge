@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>解析仓库</title>
+    <title>Parse Git Repository</title>
     <style>
         body {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #f0f0f0;
             display: flex;
             justify-content: center;
@@ -83,18 +83,18 @@
 </head>
 <body>
 <div class="container">
-    <h1>上传Git仓库</h1>
+    <h1>Parse Git Repository</h1>
     <form id="uploadForm">
         <div class="form-group">
-            <input type="text" id="repoUrl" placeholder="Git仓库地址" required>
+            <input type="text" id="repoUrl" placeholder="Git repository URL" required>
         </div>
         <div class="form-group">
-            <input type="text" id="userName" placeholder="用户名" required>
+            <input type="text" id="userName" placeholder="Username" required>
         </div>
         <div class="form-group">
-            <input type="password" id="token" placeholder="密码/Token" required>
+            <input type="password" id="token" placeholder="Password or token" required>
         </div>
-        <button type="submit">提交</button>
+        <button type="submit">Submit</button>
     </form>
     <div id="status"></div>
 </div>
@@ -126,19 +126,18 @@
         .then(data => {
             loadingOverlay.style.display = 'none';
             if (data.code === '0000') {
-                document.getElementById('status').textContent = '上传成功';
-                // 成功提示并关闭窗口
+                document.getElementById('status').textContent = 'Upload succeeded';
                  setTimeout(() => {
-                   alert('上传成功，窗口即将关闭');
+                   alert('Upload succeeded. This window will now close.');
                    window.close();
                  }, 500);
             } else {
-                document.getElementById('status').textContent = '上传失败';
+                document.getElementById('status').textContent = data.info || 'Upload failed';
             }
         })
         .catch(error => {
             loadingOverlay.style.display = 'none';
-            document.getElementById('status').textContent = '上传仓库时出错';
+            document.getElementById('status').textContent = 'Failed to parse the Git repository';
         });
     });
 </script>

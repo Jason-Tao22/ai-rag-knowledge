@@ -2,7 +2,7 @@
        @apply flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors;
    }
 .chat-item.selected {
-    @apply bg-blue-50; /* 或使用深色背景如bg-gray-200 */
+    @apply bg-blue-50;
 }
 .chat-item-content {
        @apply flex-1 truncate;
@@ -75,7 +75,7 @@
 .chat-actions button {
       margin-left: 4px; /* Add some space between buttons */
   }
-  /* 下拉菜单过渡动画 */
+  /* Upload menu transition */
   #uploadMenu {
       transition: all 0.2s ease-out;
       transform-origin: top right;
