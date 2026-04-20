@@ -1,0 +1,77 @@
+services:
+  vector_db:
+    image: pgvector/pgvector:pg16
+    container_name: techqa-vector-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai-rag-knowledge
+    volumes:
+      - ./docs/tag/v1.0/pgvector/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: techqa-redis
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    volumes:
+      - ./docs/tag/v1.0/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "16379:6379"
+
+  ollama:
+    image: ollama/ollama:0.5.10
+    container_name: techqa-ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_KEEP_ALIVE: 2m
+      OLLAMA_MAX_LOADED_MODELS: 1
+      OLLAMA_NUM_PARALLEL: 1
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
+  ai-rag-knowledge-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: techqa-rag-app
+    restart: unless-stopped
+    depends_on:
+      - vector_db
+      - redis
+      - ollama
+    environment:
+      SERVER_PORT: 8090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://vector_db:5432/ai-rag-knowledge
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      REDIS_SDK_CONFIG_HOST: redis
+      REDIS_SDK_CONFIG_PORT: 6379
+      SPRING_AI_OLLAMA_BASE_URL: http://ollama:11434
+      SPRING_AI_RAG_EMBED: nomic-embed-text
+      SPRING_AI_OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+    ports:
+      - "8090:8090"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: techqa-rag-nginx
+    restart: unless-stopped
+    depends_on:
+      - ai-rag-knowledge-app
+    ports:
+      - "80:80"
+    volumes:
+      - ./docs/tag/v1.0/nginx/html:/usr/share/nginx/html:ro
+      - ./docs/tag/v1.0/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docs/tag/v1.0/nginx/conf/conf.d:/etc/nginx/conf.d:ro
+
+volumes:
+  pgdata:
+  ollama:
