@@ -24,6 +24,8 @@ Read these files in order:
 
 ## Writeup files
 
+- `NOTEBOOKLM_SOURCE_TEXT.md`
+  - copy/paste source packet for NotebookLM to generate the required one-slide pitch, speaking script, system diagram, and final report draft
 - `FINAL_WRITEUP_DRAFT.md`
   - draft structure for the final report
 - `SYSTEM_DIAGRAM.md`
@@ -42,6 +44,8 @@ Read these files in order:
 
 - `DEMO_QUERIES.md`
   - prepared live-demo questions and expected evidence
+- `GCP_DEMO_STATUS.md`
+  - current public endpoint smoke-test result and reimport steps if the TechQA corpus needs to be restored
 - `PUBLIC_ENDPOINT_PLAN.md`
   - how to expose the local demo through a public URL on presentation day
 - `../../scripts/presentation_smoke_test.sh`
@@ -72,7 +76,8 @@ The extracted raw JSON files are in the repo. The duplicate archive file `data/r
 
 ## Recommended next actions
 
-1. use `SLIDE_CONTENT_DRAFT.md` to fill the slide deck
-2. use `FINAL_WRITEUP_DRAFT.md` to write the final report
-3. use `PROJECT_STATUS.md` and the README to verify the demo locally
-4. use `DEMO_QUERIES.md` and the smoke test before presentation
+1. use `NOTEBOOKLM_SOURCE_TEXT.md` to generate the one-slide pitch, talk script, diagram, and report draft
+2. use `SLIDE_CONTENT_DRAFT.md` to fill the slide deck
+3. use `FINAL_WRITEUP_DRAFT.md` to write the final report
+4. use `PROJECT_STATUS.md` and the README to verify the demo locally
+5. use `DEMO_QUERIES.md` and the smoke test before presentation
