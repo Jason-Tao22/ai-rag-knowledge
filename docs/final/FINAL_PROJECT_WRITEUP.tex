@@ -1,0 +1,258 @@
+\documentclass[paper=a4, fontsize=11pt]{scrartcl}
+
+\newcommand{\assignment}{Final Project Writeup}
+\newcommand{\duedate}{April 2026}
+
+\IfFileExists{include/hw-template.tex}{
+    \input{include/hw-template.tex}
+}{
+    \usepackage[margin=1in]{geometry}
+    \usepackage{xcolor}
+    \usepackage{hyperref}
+    \title{\assignment}
+    \date{\duedate}
+}
+
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+\makeatletter
+\@ifpackageloaded{hyperref}{}{\usepackage{hyperref}}
+\makeatother
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\author{
+    \textbf{Yifan Tao and Letong Yi} \\
+    \href{https://github.com/Jason-Tao22/ai-rag-knowledge}{https://github.com/Jason-Tao22/ai-rag-knowledge} \\
+    Public endpoint: \href{http://35.247.103.164/}{http://35.247.103.164/}
+}
+
+\begin{document}
+
+\maketitle
+
+\section{Executive Summary and Abstract}
+
+We built a local, citation-grounded retrieval-augmented generation (RAG) system for technical-support question answering. The system indexes a 10,000-document subset of the TechQA / IBM technical-support corpus, retrieves relevant support passages with PostgreSQL full-text search, generates answers with a locally served Ollama model, and displays clickable citation cards so users can verify the evidence behind each answer. Our public GCP endpoint passed a presentation smoke test: the \texttt{techqa} knowledge base was available, retrieval-only mode returned the expected AppScan support document \texttt{swg21512700}, and full RAG mode returned the expected IBM MQ support document \texttt{swg1SE46234}. We conclude that a lightweight local RAG system can provide a reproducible and verifiable technical-support QA demo, while CPU-only local generation remains the main latency bottleneck.
+
+\section{Motivation and Impact}
+
+\subsection{RAG LLM Projects / PAL Agents}
+
+The capability we built is a web-based RAG assistant for technical-support QA. The domain is enterprise software troubleshooting, where user questions often mention product-specific symptoms, error codes, installation messages, and configuration details. In this setting, a fluent but unsupported answer is not enough: users need to know which source article supports the answer and whether the retrieved passage actually matches the question.
+
+Large language models are useful for summarization and explanation, but they can hallucinate when asked about narrow technical details that are not reliably represented in their parameters. RAG is a practical alternative to repeatedly retraining or fine-tuning a model. Instead of changing the model weights, the system retrieves external evidence at inference time and asks the model to answer from that evidence. This directly addresses two problems in the course prompt: knowledge cutoffs and esoteric domain knowledge.
+
+The impact of this project is a trust-oriented support workflow. A user can ask a question, inspect the retrieved evidence, click through to the source when a URL exists, and decide whether the generated answer is grounded. This is valuable for technical-support users, instructors evaluating hallucination risk, and developers who need a reproducible example of local RAG deployment.
+
+\section{Background and Related Work}
+
+RAG systems combine parametric memory from a language model with non-parametric memory from an external corpus. Lewis et al.\ introduced retrieval-augmented generation for knowledge-intensive NLP tasks and emphasized that provenance and updating world knowledge remain important limitations of parametric-only models [2]. Our project follows the same high-level idea, but implements a course-scale engineering system rather than training a new retriever-generator model.
+
+Retrieval quality is central to RAG. Karpukhin et al.\ showed that dense passage retrieval can outperform strong sparse retrieval baselines in open-domain QA [3]. Our final implementation uses PostgreSQL full-text search as the stable final-demo retrieval path because it is simple to reproduce, fast over 10,000 documents, and handles error-code style queries well. The code also preserves a pgvector fallback path for generic uploaded files, but the final TechQA demo path prioritizes verifiable lexical retrieval and citation display.
+
+The dataset is based on TechQA, a technical-support QA dataset introduced by Castelli et al.\ at ACL 2020 [1]. IBM Research describes TechQA as a domain-adaptation question-answering dataset for the technical-support domain. It contains real user questions from IBMDeveloper and DeveloperWorks forums where accepted answers point to IBM Technotes, and IBM also released a companion collection of 801,998 Technotes available on the web as of April 4, 2019. This makes TechQA a good fit for our project: the content is realistic, domain-specific, and difficult to answer from general language-model knowledge alone.
+
+RAG systems also face context-use limitations. Liu et al.\ showed that language models may struggle to use relevant information when it appears in long contexts [4]. This motivates our decision to keep retrieved contexts short and evidence-focused. Instead of putting many long passages into the prompt, the final answer path sends the top retrieved passages to the local model and separately exposes citation cards to the user.
+
+The TechQA data can be obtained from the official IBM TechQA repository at \href{https://github.com/IBM/techqa}{https://github.com/IBM/techqa}, the IBM Research publication page at \href{https://research.ibm.com/publications/the-techqa-dataset}{https://research.ibm.com/publications/the-techqa-dataset}, or mirrors such as \href{https://huggingface.co/datasets/PrimeQA/TechQA}{https://huggingface.co/datasets/PrimeQA/TechQA}. Our repository includes scripts to convert the official technote JSON into an ingestible JSONL corpus.
+
+\section{Modeling Methodology}
+
+\subsection{System Overview}
+
+The final system is a containerized web application with five main components:
+
+\begin{center}
+\fbox{
+\begin{minipage}{0.92\textwidth}
+\centering
+User browser $\rightarrow$ nginx frontend $\rightarrow$ Spring Boot RAG API $\rightarrow$ PostgreSQL retrieval \\
+$\rightarrow$ top evidence passages $\rightarrow$ local Ollama LLM $\rightarrow$ answer and clickable citation cards
+\end{minipage}
+}
+\end{center}
+
+The frontend is a static web UI served by nginx. The backend is a Spring Boot service exposing RAG endpoints. PostgreSQL stores the TechQA corpus in the \texttt{rag\_corpus\_documents} table. Ollama serves the local generation model. Redis stores the available knowledge-base tags used by the frontend selector.
+
+\subsection{Data Ingestion}
+
+The ingestion pipeline converts the official TechQA technote JSON into JSONL using \texttt{scripts/prepare\_techqa\_jsonl.py}. Each normalized record contains a document ID, title, text, source URL, and source name. The corpus is imported through the backend endpoint \texttt{POST /api/v1/rag/corpus/import\_jsonl}. For the public GCP deployment, the 10,000-document JSONL file was split into 50 smaller batch files because nginx rejected the 38 MB one-shot upload with \texttt{413 Request Entity Too Large}. The batch import succeeded and registered the \texttt{techqa} knowledge-base tag.
+
+\subsection{Retrieval}
+
+The final demo path uses PostgreSQL full-text search. The backend creates a generated \texttt{tsvector} field over the document title and content, indexes it with a GIN index, and queries it with \texttt{websearch\_to\_tsquery}. Results are ranked with \texttt{ts\_rank\_cd}, and snippets are generated with \texttt{ts\_headline}. If no full-text result is found, the code falls back to a simpler \texttt{ILIKE} search. If the corpus table does not produce results for a generic uploaded-file knowledge base, the system can fall back to the legacy pgvector path.
+
+This design was chosen because many technical-support queries contain exact terms, product names, and error codes such as \texttt{AMQ6048}. Lexical full-text search is transparent, fast, and easy to explain in a live demo. The retrieved citation object stores rank, document ID, title, source name, URL, passage, and score.
+
+\subsection{Generation}
+
+Full RAG mode first retrieves the top passages, then builds a citation-aware prompt for a local Ollama chat model. The public demo currently uses \texttt{qwen2.5:0.5b} as a fast local model. The generation configuration uses a low temperature and short output budget to reduce unsupported elaboration. If retrieval returns no passages, the system avoids fabricating an answer and returns: ``I do not know based on the currently indexed passages.''
+
+We also expose a retrieval-only mode. In retrieval-only mode, the system skips the LLM and directly returns the supporting passages and citation cards. This mode is important for demonstration because it verifies the grounding behavior quickly and isolates the retrieval component from generation latency.
+
+\subsection{Frontend and Citations}
+
+The frontend allows the user to select a knowledge base, choose a local model, toggle retrieval-only mode, and ask questions. Assistant responses include metadata such as model name, number of retrieved passages, and latency. Citation cards display source title, source metadata, passage text, and an ``Open source'' link when a source URL is available. This directly supports the verifiability requirement in the rubric.
+
+\subsection{Reproducibility}
+
+The repository README explains how to run the system, prepare the TechQA corpus, import JSONL data, pull local Ollama models, and run the presentation smoke test. The README is available at:
+
+\begin{center}
+\href{https://github.com/Jason-Tao22/ai-rag-knowledge/blob/codex/final-rag-demo-handoff/README.md}{https://github.com/Jason-Tao22/ai-rag-knowledge/blob/codex/final-rag-demo-handoff/README.md}
+\end{center}
+
+The Docker Compose stack includes PostgreSQL / pgvector, Redis, Ollama, the Spring Boot application, and nginx. A minimal local setup is:
+
+\begin{verbatim}
+docker compose -f docker-compose.final.yml up --build -d
+docker exec -it techqa-ollama ollama pull qwen2.5:0.5b
+bash scripts/import_jsonl_corpus.sh techqa data/processed/techqa_10k.jsonl http://localhost:8090
+\end{verbatim}
+
+\section{Data and Data Analysis}
+
+\subsection{Data Source(s)}
+
+We use the TechQA / IBM technical-support corpus as the data source. The official TechQA dataset contains real technical-support questions and accepted answers linked to IBM Technotes. IBM Research reports 600 training, 310 development, and 490 evaluation question-answer pairs, plus a companion set of 801,998 Technotes. For the final course demo, we use a 10,000-document subset of the technote corpus, which satisfies the project requirement of at least 10,000 database entries while keeping the GCP deployment lightweight and stable.
+
+Each indexed row stores:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Document ID}: the TechQA / IBM technote identifier, such as \texttt{swg21512700}.
+    \item \textbf{Title}: the support article title.
+    \item \textbf{Text}: the passage or support article body.
+    \item \textbf{Source URL}: available when the source record contains a URL.
+    \item \textbf{Source name}: product or corpus metadata, such as \texttt{TechQA Technote}.
+    \item \textbf{Knowledge-base tag}: \texttt{techqa} for the final demo.
+\end{itemize}
+
+\subsection{Data Analysis and Exploration}
+
+The processed final-demo JSONL file contains exactly 10,000 records. Based on whitespace token counts over the \texttt{text} field, the corpus has the following length distribution:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}
+\toprule
+Statistic & Word count \\
+\midrule
+Minimum & 27 \\
+25th percentile & 252 \\
+Median & 369 \\
+Mean & 431.9 \\
+75th percentile & 546 \\
+90th percentile & 774 \\
+95th percentile & 957 \\
+99th percentile & 1,286 \\
+Maximum & 13,883 \\
+\bottomrule
+\end{tabular}
+\caption{Document length distribution for the 10,000-record final TechQA subset.}
+\end{table}
+
+This distribution shows that most documents are short-to-medium technical notes, while a small number are much longer. The corpus is well suited for RAG because many questions can be answered from a small high-signal passage, but the system still needs retrieval and snippet selection to avoid passing long, noisy documents to the model.
+
+The dataset also contains many product names, installation messages, and error codes. This makes exact-term retrieval important. Example demo queries include \texttt{AppScan Source not a supported operating system} and \texttt{AMQ9208 AMQ6048 AMQ9492 data conversion}. These are realistic technical-support searches because users frequently search by symptoms or error identifiers rather than by polished natural-language questions.
+
+\section{Results and Evaluation}
+
+We evaluated the final public endpoint with a small presentation-oriented smoke test. The goal was not to claim a full benchmark result; instead, the goal was to verify that the live endpoint satisfies the technical delivery requirements: public accessibility, real-time inference, correct knowledge-base loading, citation retrieval, and full RAG execution.
+
+\subsection{Retrieval Evaluation}
+
+For prepared technical-support queries with known expected support documents, retrieval-only mode returned the correct document at rank 1 in all three tested cases:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}Xlllrr}
+\toprule
+Query & Expected ID & Top ID & Hit & Latency & Count \\
+\midrule
+AppScan Source not a supported operating system & \texttt{swg21512700} & \texttt{swg21512700} & yes & 39 ms & 3 \\
+Graphical installers not supported AppScan Source Linux & \texttt{swg21990930} & \texttt{swg21990930} & yes & 8 ms & 1 \\
+AMQ9208 AMQ6048 AMQ9492 data conversion & \texttt{swg1SE46234} & \texttt{swg1SE46234} & yes & 14 ms & 1 \\
+\bottomrule
+\end{tabularx}
+\caption{Retrieval-only results from the public GCP endpoint on prepared demo queries.}
+\end{table}
+
+The presentation smoke test also confirmed that the public endpoint exposes the \texttt{techqa} tag and that the AppScan retrieval query returns \texttt{swg21512700}. This supports the claim that the database is loaded and the citation path is functional.
+
+\subsection{End-to-End RAG Evaluation}
+
+The full RAG path was tested with the query \texttt{AMQ9208 AMQ6048 AMQ9492 data conversion}. The system retrieved the expected document \texttt{swg1SE46234}, generated an answer with the local Ollama model, and returned citation cards. The observed public-endpoint latency for this full path was 31,455 ms on the tested CPU-only GCP environment.
+
+The main qualitative finding is that retrieval is fast while local generation is slower. This is an acceptable tradeoff for the course demo because retrieval-only mode provides immediate verifiability, while full RAG mode demonstrates the complete end-to-end pipeline. In a production system, we would improve latency by serving Ollama on a GPU-backed machine, using a larger but better optimized local model, or caching frequent retrieval contexts.
+
+\subsection{Corner Cases and Hallucination Control}
+
+We include a weak-evidence query for the live demo:
+
+\begin{center}
+\texttt{How do I configure Kubernetes autoscaling for IBM MQ?}
+\end{center}
+
+This query may retrieve weak or unrelated documents because the final corpus is focused on IBM technical-support technotes, not necessarily Kubernetes autoscaling tutorials. This case is useful because it demonstrates why citation visibility matters. If the evidence is weak, the user can see that weakness instead of trusting a fluent answer blindly. The current system already avoids answering when no passages are found; future work should add explicit confidence scoring and stronger abstention when retrieved passages are only loosely related.
+
+\section{Conclusions}
+
+We learned that a useful RAG demo does not need to rely on the largest possible model. For a technical-support setting, the most important property is whether the system can find and expose the right evidence. Our project demonstrates a complete local RAG system with a frontend, database-backed retrieval, local LLM generation, Dockerized deployment, a public GCP endpoint, and citation cards for verification.
+
+The project can be applied to other support-documentation settings such as internal developer docs, product troubleshooting articles, onboarding guides, and course materials. The same architecture could be reused wherever users need answers that are grounded in a controlled corpus.
+
+If we had more time, we would extend the work in four directions. First, we would add a reranker to improve ranking when many documents share similar error-code language. Second, we would add confidence scoring and abstention so the system can explicitly say when evidence is weak. Third, we would evaluate on a larger held-out TechQA question set with Recall@k, MRR, answer faithfulness, and latency distributions. Fourth, we would move local generation to a GPU-backed server to reduce the current CPU-only generation latency.
+
+\section{Submission Guidelines}
+
+The final submission should include the PDF report, the public endpoint, and the GitHub repository link as a single Gradescope submission for the team. The current public endpoint is:
+
+\begin{center}
+\href{http://35.247.103.164/}{http://35.247.103.164/}
+\end{center}
+
+The repository is:
+
+\begin{center}
+\href{https://github.com/Jason-Tao22/ai-rag-knowledge}{https://github.com/Jason-Tao22/ai-rag-knowledge}
+\end{center}
+
+The final project branch used for this writeup is:
+
+\begin{center}
+\href{https://github.com/Jason-Tao22/ai-rag-knowledge/tree/codex/final-rag-demo-handoff}{codex/final-rag-demo-handoff}
+\end{center}
+
+\subsection*{Team Contributions}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Yifan Tao}: project planning, RAG system implementation, TechQA corpus preparation, documentation coordination, demo query preparation, and final report/presentation drafting.
+    \item \textbf{Letong Yi}: GCP deployment, public endpoint setup, infrastructure support, endpoint testing, and presentation/report preparation.
+\end{itemize}
+
+Please adjust these contribution bullets before final submission if the actual division of labor changes.
+
+\section*{References}
+
+\begin{enumerate}[label={[\arabic*]}, leftmargin=*]
+    \item Vittorio Castelli, Rishav Chakravarti, Saswati Dana, Anthony Ferritto, Radu Florian, Martin Franz, Dinesh Garg, Dinesh Khandelwal, Scott McCarley, Michael McCawley, Mohamed Nasr, Lin Pan, Cezar Pendus, John Pitrelli, Saurabh Pujar, Salim Roukos, Andrzej Sakrajda, Avirup Sil, Rosario Uceda-Sosa, Todd Ward, and Rong Zhang. \textit{The TechQA Dataset}. ACL 2020. IBM Research page: \url{https://research.ibm.com/publications/the-techqa-dataset}.
+    \item Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Kuettler, Mike Lewis, Wen-tau Yih, Tim Rocktaeschel, Sebastian Riedel, and Douwe Kiela. \textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}. NeurIPS 2020. arXiv: \url{https://arxiv.org/abs/2005.11401}.
+    \item Vladimir Karpukhin, Barlas Oguz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey Edunov, Danqi Chen, and Wen-tau Yih. \textit{Dense Passage Retrieval for Open-Domain Question Answering}. EMNLP 2020. ACL Anthology: \url{https://aclanthology.org/2020.emnlp-main.550/}.
+    \item Nelson F. Liu, Kevin Lin, John Hewitt, Ashwin Paranjape, Michele Bevilacqua, Fabio Petroni, and Percy Liang. \textit{Lost in the Middle: How Language Models Use Long Contexts}. TACL 2024. arXiv: \url{https://arxiv.org/abs/2307.03172}.
+    \item IBM TechQA dataset repository. \url{https://github.com/IBM/techqa}.
+    \item Project repository and reproducibility instructions. \url{https://github.com/Jason-Tao22/ai-rag-knowledge}.
+\end{enumerate}
+
+\end{document}

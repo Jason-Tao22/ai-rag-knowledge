@@ -26,6 +26,8 @@ Read these files in order:
 
 - `NOTEBOOKLM_SOURCE_TEXT.md`
   - copy/paste source packet for NotebookLM to generate the required one-slide pitch, speaking script, system diagram, and final report draft
+- `FINAL_PROJECT_WRITEUP.tex`
+  - filled LaTeX final report draft based on the instructor template
 - `FINAL_WRITEUP_DRAFT.md`
   - draft structure for the final report
 - `SYSTEM_DIAGRAM.md`
